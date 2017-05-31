@@ -5,15 +5,15 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.Environment;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
-import com.kk.securityhttp.utils.PathUtil;
-import com.kk.securityhttp.utils.FileUtil;
-import com.kk.securityhttp.utils.LogUtil;
+import com.kk.utils.FileUtil;
+import com.kk.utils.LogUtil;
+import com.kk.utils.PathUtil;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,7 +49,6 @@ public class GoagalInfo {
     public String uuid = "";
     public String channel = "default";
 
-    public static String PATH = "";
     public String configPath = "";
 
     public Object extra;
@@ -62,8 +61,7 @@ public class GoagalInfo {
 
     public void init(Context context) {
 
-        PATH = Environment.getExternalStorageDirectory() + "/" + context.getPackageName();
-        configPath = PathUtil.getConfigPath();
+        configPath = PathUtil.getConfigPath(context);
 
         String result1 = null;
         String result2 = null;
@@ -96,9 +94,9 @@ public class GoagalInfo {
 
         String name = gamechannelFilename;
         if (result1 != null) {
-            FileUtil.writeInfoInSDCard(result1, configPath, name);
+            FileUtil.writeInfoToFile(result1, configPath, name);
         } else {
-            result1 = FileUtil.readInfoInSDCard(context, configPath, name);
+            result1 = FileUtil.readInfoFromFile(configPath, name);
         }
 
         if (result1 != null) {
@@ -108,9 +106,9 @@ public class GoagalInfo {
         name = rasPublickeylFilename;
         if (result2 != null) {
             publicKey = getPublicKey(result2);
-            FileUtil.writeInfoInSDCard(result2, configPath, name);
+            FileUtil.writeInfoToFile(result2, configPath, name);
         } else {
-            result2 = FileUtil.readInfoInSDCard(context, configPath, name);
+            result2 = FileUtil.readInfoFromFile(configPath, name);
             if (result2 != null) {
                 publicKey = getPublicKey(result2);
             }

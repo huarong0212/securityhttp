@@ -1,20 +1,20 @@
 package com.kk.securityhttp.net.utils;
 
-import android.os.Build;
-
-
 import com.kk.securityhttp.domain.GoagalInfo;
 import com.kk.securityhttp.net.contains.HttpConfig;
 import com.kk.securityhttp.net.entry.Response;
 import com.kk.securityhttp.net.entry.UpFileInfo;
-import com.kk.securityhttp.security.Encrypt;
-import com.kk.securityhttp.utils.EncryptUtil;
-import com.kk.securityhttp.utils.LogUtil;
+import com.kk.securityhttp.net.entry.UpFileInfo2;
+import com.kk.utils.EncryptUtil;
+import com.kk.utils.LogUtil;
+import com.kk.utils.security.Encrypt;
+
 
 import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +29,42 @@ import okhttp3.RequestBody;
  * Created by zhangkai on 16/9/9.
  */
 public final class OKHttpUtil {
+    //< 添加http头信息
+    public static void addHeaders(Request.Builder builder, Map<String, String> headers) {
+        if (headers != null && headers.size() > 0) {
+            Iterator it = headers.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                builder.addHeader(pair.getKey() + "", pair.getValue() + "");
+                it.remove(); // avoids a ConcurrentModificationException
+            }
+        }
+    }
+
+    //< 根据Map构建url信息
+    public static String buildUrl(String url, Map<String, String> params) {
+        StringBuilder urlBuilder = new StringBuilder(url);
+        if (params != null && params.size() > 0) {
+            boolean hasParams = false;
+            if (url.contains("?")) {
+                hasParams = true;
+            }
+            Iterator it = params.entrySet().iterator();
+            int i = 0;
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                if (i == 0 && !hasParams) {
+                    urlBuilder.append("?" + pair.getKey() + "=" + pair.getValue());
+                } else {
+                    urlBuilder.append("&" + pair.getKey() + "=" + pair.getValue());
+                }
+                it.remove(); // avoids a ConcurrentModificationException
+            }
+        }
+        return urlBuilder.toString();
+    }
+
+    //< 获取Request.Builder
     public static Request.Builder getRequestBuilder(String url) {
         LogUtil.msg("客户端请求url->" + url);
         Request.Builder builder = new Request.Builder()
@@ -37,6 +73,7 @@ public final class OKHttpUtil {
         return builder;
     }
 
+    //< 获取OkHttpClient.Builder
     public static OkHttpClient.Builder getHttpClientBuilder() {
         final OkHttpClient.Builder builder = new OkHttpClient.Builder();
         builder.connectTimeout(HttpConfig.TIMEOUT, TimeUnit.MILLISECONDS);
@@ -45,6 +82,8 @@ public final class OKHttpUtil {
         return builder;
     }
 
+
+    //< 设置响应返回信息
     public static Response setResponse(int code, String body) {
         Response response = new Response();
         response.code = code;
@@ -52,11 +91,12 @@ public final class OKHttpUtil {
         return response;
     }
 
-    public static FormBody.Builder setBuilder(Map<String, String> params) {
+    //< 设置请求参数FormBody.Builder
+    public static FormBody.Builder setBuilder(Map<String, String> params, boolean isEncryptResponse) {
         if (params == null) {
             params = new HashMap<String, String>();
         }
-        setDefaultParams(params, false);
+        setDefaultParams(params, isEncryptResponse);
         FormBody.Builder builder = new FormBody.Builder();
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
@@ -68,6 +108,7 @@ public final class OKHttpUtil {
         return builder;
     }
 
+    //< 设置请求参数MultipartBody.Builder
     public static MultipartBody.Builder setBuilder(UpFileInfo upFileInfo, Map<String, String> params, boolean isEncryptResponse) {
         if (params == null) {
             params = new HashMap<String, String>();
@@ -88,20 +129,69 @@ public final class OKHttpUtil {
         return builder;
     }
 
-    public static Request getRequest(String url, Map<String, String> params, boolean isrsa, boolean isEncryptResponse) {
+    //< 设置请求参数MultipartBody.Builder 2
+    public static MultipartBody.Builder setBuilder(UpFileInfo2 upFileInfo, Map<String, String> params, boolean
+            isEncryptResponse) {
+        if (params == null) {
+            params = new HashMap<String, String>();
+        }
+        setDefaultParams(params, isEncryptResponse);
+        MultipartBody.Builder builder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM);
+        if (params != null) {
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                builder.addFormDataPart(key, value);
+            }
+        }
+        builder.addFormDataPart(upFileInfo.name, upFileInfo.filename, RequestBody.create(MediaType.parse
+                        ("multipart/form-data"),
+                upFileInfo.buffer));
+        return builder;
+    }
+
+    //< 获取RequestBody
+    public static RequestBody getRequestBody(Map<String, String> params, boolean isrsa, boolean
+            isEncryptResponse) {
         byte[] data = OKHttpUtil.encodeParams(params, isrsa, isEncryptResponse);
         RequestBody requestBody = RequestBody.create(HttpConfig.MEDIA_TYPE, data);
-        return OKHttpUtil.getRequestBuilder(url).post(requestBody).build();
+        return requestBody;
     }
 
-    public static Request getRequest(String url, Map<String, String> params, boolean isEncryptResponse) {
-        params = OKHttpUtil.encodeParams(params, isEncryptResponse);
-        return OKHttpUtil.getRequestBuilder(url).post(OKHttpUtil.setBuilder(params).build()).build();
+    //< 获取Request 1
+    public static Request getRequest(String url, Map<String, String> params, Map<String, String> headers, boolean isrsa,
+                                     boolean iszip, boolean isEncryptResponse) {
+        Request.Builder builder = OKHttpUtil.getRequestBuilder(url);
+        OKHttpUtil.addHeaders(builder, headers);
+        Request request;
+        if (isrsa) {
+            iszip = true;
+        }
+        if (iszip) {
+            request = builder.post(OKHttpUtil.getRequestBody(params, isrsa, iszip)).build();
+        } else {
+            request = builder.post(OKHttpUtil.setBuilder(params, isEncryptResponse).build()).build();
+        }
+        return request;
     }
 
-    public static Request getRequest(String url, Map<String, String> params, UpFileInfo upFileInfo, boolean isEncryptResponse) {
+    //< 获取Request 2
+    public static Request getRequest(String url, Map<String, String> params, Map<String, String> headers, UpFileInfo
+            upFileInfo, boolean isEncryptResponse) {
+        Request.Builder builder = OKHttpUtil.getRequestBuilder(url);
+        OKHttpUtil.addHeaders(builder, headers);
         MultipartBody requestBody = OKHttpUtil.setBuilder(upFileInfo, params, isEncryptResponse).build();
-        return OKHttpUtil.getRequestBuilder(url).post(requestBody).build();
+        return builder.post(requestBody).build();
+    }
+
+    //< 获取Request 3
+    public static Request getRequest(String url, Map<String, String> params, Map<String, String> headers, UpFileInfo2
+            upFileInfo, boolean isEncryptResponse) {
+        Request.Builder builder = OKHttpUtil.getRequestBuilder(url);
+        OKHttpUtil.addHeaders(builder, headers);
+        MultipartBody requestBody = OKHttpUtil.setBuilder(upFileInfo, params, isEncryptResponse).build();
+        return builder.post(requestBody).build();
     }
 
     //<  加密正文
@@ -114,7 +204,8 @@ public final class OKHttpUtil {
         String jsonStr = jsonObject.toString();
         LogUtil.msg("客户端请求数据->" + jsonStr);
         if (isrsa) {
-            jsonStr = EncryptUtil.rsa(jsonStr);
+            LogUtil.msg("当前公钥->" + GoagalInfo.get().getPublicKey());
+            jsonStr = EncryptUtil.rsa(GoagalInfo.get().getPublicKey(), jsonStr);
         }
         return EncryptUtil.compress(jsonStr);
     }
@@ -137,31 +228,11 @@ public final class OKHttpUtil {
     //设置默认参数
     private static void setDefaultParams(Map<String, String> params, boolean encryptResponse) {
         if (encryptResponse) {
-            params.put("encrypt-response", "true");
+            params.put("encrypt_response", "true");
         }
 
         if (defaultParams != null) {
             params.putAll(defaultParams);
-        }
-
-        if (!isUseDefaultParams) return;
-
-        String agent_id = "1";
-        if (GoagalInfo.get().channelInfo != null) {
-            params.put("from_id", GoagalInfo.get().channelInfo.from_id + "");
-            params.put("author", GoagalInfo.get().channelInfo.author + "");
-            agent_id = GoagalInfo.get().channelInfo.agent_id + "";
-        }
-        params.put("agent_id", agent_id);
-        params.put("ts", System.currentTimeMillis() + "");
-        params.put("imeil", GoagalInfo.get().uuid);
-        String sv = android.os.Build.MODEL.contains(android.os.Build.BRAND) ? android.os.Build.MODEL + " " + android
-                .os.Build.VERSION.RELEASE : Build.BRAND + " " + android
-                .os.Build.MODEL + " " + android.os.Build.VERSION.RELEASE;
-        params.put("sv", sv);
-        params.put("device_type", "2");
-        if (GoagalInfo.get().packageInfo != null) {
-            params.put("app_version", GoagalInfo.get().packageInfo.versionName + "");
         }
     }
 
@@ -169,12 +240,6 @@ public final class OKHttpUtil {
         OKHttpUtil.defaultParams = params;
     }
 
-    public static Map<String, String> defaultParams;
-
-    public static void setIsUseDefaultParams(boolean isUseDefaultParams) {
-        OKHttpUtil.isUseDefaultParams = isUseDefaultParams;
-    }
-
-    private static boolean isUseDefaultParams = true;
+    private static Map<String, String> defaultParams;
 
 }

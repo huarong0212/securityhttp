@@ -13,7 +13,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
     }
-    buildTypes {
+    buildTypes {g
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -24,18 +24,17 @@ android {
 ext {
     PUBLISH_GROUP_ID = 'com.kk'
     PUBLISH_ARTIFACT_ID = 'securityhttp'
-    PUBLISH_VERSION = '1.0.5'
+    PUBLISH_VERSION = '1.0.17'
 }
 
 apply from: 'https://raw.githubusercontent.com/blundell/release-android-library/master/android-release-aar.gradle'
-
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.alibaba:fastjson:1.2.16'
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
     compile 'com.orhanobut:logger:1.15'
-    compile files('libs/commons-codec-1.10.jar')
     compile 'io.reactivex:rxandroid:+'
     compile 'io.reactivex:rxjava:+'
+    compile 'com.kk:utils:1.0.0'
 }

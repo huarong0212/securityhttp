@@ -1,6 +1,6 @@
 package com.kk.securityhttp.net.contains;
 
-import com.kk.securityhttp.engin.BaseEngin;
+import com.kk.securityhttp.domain.GoagalInfo;
 import com.kk.securityhttp.net.utils.OKHttpUtil;
 
 import java.util.Map;
@@ -29,7 +29,7 @@ public class HttpConfig {
         OKHttpUtil.setDefaultParams(params);
     }
 
-    public static void setIsUseDefaultParams(boolean isUseDefaultParams) {
-        OKHttpUtil.setIsUseDefaultParams(isUseDefaultParams);
+    public static void setPublickey(String publickey){
+        GoagalInfo.get().publicKey = publickey;
     }
 }
