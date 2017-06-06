@@ -24,12 +24,7 @@ public class HttpCoreEngin<T> extends BaseEngin<T> {
     }
 
     public static HttpCoreEngin get(Context context) {
-        synchronized (HttpCoreEngin.class) {
-            if (httpCoreEngin == null) {
-                httpCoreEngin = new HttpCoreEngin(context);
-            }
-        }
-        return httpCoreEngin;
+        return new HttpCoreEngin(context);
     }
 
     private String url;
