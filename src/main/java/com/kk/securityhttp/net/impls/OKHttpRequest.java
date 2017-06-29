@@ -3,7 +3,6 @@ package com.kk.securityhttp.net.impls;
 
 import com.kk.securityhttp.net.contains.HttpConfig;
 import com.kk.securityhttp.net.entry.UpFileInfo;
-import com.kk.securityhttp.net.entry.UpFileInfo2;
 import com.kk.securityhttp.net.exception.NullResonseListenerException;
 import com.kk.securityhttp.net.interfaces.IHttpRequest;
 import com.kk.securityhttp.net.listeners.OnHttpResonseListener;
@@ -16,6 +15,7 @@ import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
@@ -44,31 +44,11 @@ public class OKHttpRequest implements IHttpRequest {
     }
 
     @Override
-    public com.kk.securityhttp.net.entry.Response get(String url, boolean isEncryptResponse) throws IOException {
-        return get(url, null, isEncryptResponse);
-    }
-
-    @Override
-    public com.kk.securityhttp.net.entry.Response get(String url, Map<String, String> headers, boolean isEncryptResponse) throws IOException {
-        return get(url, null, headers, isEncryptResponse);
-    }
-
-    @Override
     public com.kk.securityhttp.net.entry.Response get(String url, Map<String, String> params, Map<String, String> headers, boolean isEncryptResponse) throws IOException {
         Request.Builder builder = OKHttpUtil.getRequestBuilder(OKHttpUtil.buildUrl(url, params));
         OKHttpUtil.addHeaders(builder, headers);
         Request request = builder.build();
         return sendRequest(request, isEncryptResponse);
-    }
-
-    @Override
-    public void aget(String url, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
-        aget(url, null, isEncryptResponse, httpResonseListener);
-    }
-
-    @Override
-    public void aget(String url, Map<String, String> headers, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
-        aget(url, null, headers, isEncryptResponse, httpResonseListener);
     }
 
     @Override
@@ -82,9 +62,12 @@ public class OKHttpRequest implements IHttpRequest {
         sendRequest(request, isEncryptResponse, httpResonseListener);
     }
 
+
     @Override
-    public com.kk.securityhttp.net.entry.Response post(String url, Map<String, String> params, boolean isrsa, boolean iszip, boolean isEncryptResponse) throws IOException, NullResonseListenerException {
-        return post(url, params, null, isrsa, iszip, isEncryptResponse);
+    public com.kk.securityhttp.net.entry.Response post(String url, Map<String, String> header, MediaType type, String
+            body) throws IOException, NullResonseListenerException {
+        Request request = OKHttpUtil.getRequest(url, header, type, body);
+        return sendRequest(request, false);
     }
 
     @Override
@@ -93,10 +76,7 @@ public class OKHttpRequest implements IHttpRequest {
         return sendRequest(request, isEncryptResponse);
     }
 
-    @Override
-    public void apost(String url, Map<String, String> params, boolean isrsa, boolean iszip, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
-        apost(url, params, null, isrsa, iszip, isEncryptResponse, httpResonseListener);
-    }
+
 
     @Override
     public void apost(String url, Map<String, String> params, Map<String, String> headers, boolean isrsa, boolean iszip, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
@@ -104,72 +84,32 @@ public class OKHttpRequest implements IHttpRequest {
         sendRequest(request, isEncryptResponse, httpResonseListener);
     }
 
-    @Override
-    public com.kk.securityhttp.net.entry.Response uploadFile(String url, UpFileInfo upFileInfo, Map<String, String>
-            params, boolean
-                                                                     isEncryptResponse) throws
-            IOException {
-        return uploadFile(url, upFileInfo, params, null, isEncryptResponse);
-    }
+
 
     @Override
     public com.kk.securityhttp.net.entry.Response uploadFile(String url, UpFileInfo upFileInfo, Map<String, String> params, Map<String, String> headers, boolean isEncryptResponse) throws IOException {
-        if (upFileInfo == null || upFileInfo.file == null) throw new FileNotFoundException("file is null");
+        if (upFileInfo == null || (upFileInfo.file == null && upFileInfo.buffer == null)) throw new FileNotFoundException("file is null");
 
         Request request = OKHttpUtil.getRequest(url, params, headers, upFileInfo, isEncryptResponse);
 
         return sendRequest(request, isEncryptResponse);
     }
 
-    @Override
-    public void auploadFile(String url, UpFileInfo upFileInfo, Map<String, String> params, boolean
-            isEncryptResponse,
-                            OnHttpResonseListener
-                                    httpResonseListener)
-            throws IOException, NullResonseListenerException {
-        auploadFile(url, upFileInfo, params, null, isEncryptResponse, httpResonseListener);
-    }
 
     @Override
     public void auploadFile(String url, UpFileInfo upFileInfo, Map<String, String> params, Map<String, String> headers, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
         if (httpResonseListener == null) throw new NullResonseListenerException();
 
-        if (upFileInfo == null || upFileInfo.file == null) throw new FileNotFoundException("file is null");
+        if (upFileInfo == null || (upFileInfo.file == null && upFileInfo.buffer == null)) throw new
+                FileNotFoundException
+                ("file is" +
+                " null");
 
         Request request = OKHttpUtil.getRequest(url, params, headers, upFileInfo, isEncryptResponse);
 
         sendRequest(request, isEncryptResponse, httpResonseListener);
     }
 
-    @Override
-    public com.kk.securityhttp.net.entry.Response uploadFile(String url, UpFileInfo2 upFileInfo, Map<String, String> params, boolean isEncryptResponse) throws IOException {
-        return uploadFile(url, upFileInfo, params, null, isEncryptResponse);
-    }
-
-    @Override
-    public com.kk.securityhttp.net.entry.Response uploadFile(String url, UpFileInfo2 upFileInfo, Map<String, String> params, Map<String, String> headers, boolean isEncryptResponse) throws IOException {
-        if (upFileInfo == null || upFileInfo.buffer == null) throw new FileNotFoundException("buffer is null");
-
-        Request request = OKHttpUtil.getRequest(url, params, headers, upFileInfo, isEncryptResponse);
-
-        return sendRequest(request, isEncryptResponse);
-    }
-
-    @Override
-    public void auploadFile(String url, UpFileInfo2 upFileInfo, Map<String, String> params, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
-        auploadFile(url, upFileInfo, params, null, isEncryptResponse, httpResonseListener);
-    }
-
-    @Override
-    public void auploadFile(String url, UpFileInfo2 upFileInfo, Map<String, String> params, Map<String, String> headers, boolean isEncryptResponse, OnHttpResonseListener httpResonseListener) throws IOException, NullResonseListenerException {
-        if (httpResonseListener == null) throw new NullResonseListenerException();
-
-        if (upFileInfo == null || upFileInfo.buffer == null) throw new FileNotFoundException("file is null");
-
-        Request request = OKHttpUtil.getRequest(url, params, headers, upFileInfo, isEncryptResponse);
-
-        sendRequest(request, isEncryptResponse, httpResonseListener);
-    }
 
     @Override
     public void cancel(String url) {

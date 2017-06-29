@@ -7,6 +7,7 @@ import java.io.File;
  */
 public class UpFileInfo {
     public File file;
+    public byte[] buffer;
     public String name = "name";
     public String filename = "filename";
 }
